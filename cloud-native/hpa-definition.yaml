@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hpa-test-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-pvc-test
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hpa-pvc-test
+  template:
+    metadata:
+      labels:
+        app: hpa-pvc-test
+    spec:
+      containers:
+        - name: cpu-burn
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting CPU burn loop"
+              mkdir -p /data/test
+              while true; do
+                date >> /data/test/activity.log
+                i=0
+                while [ $i -lt 200000 ]; do
+                  i=$((i+1))
+                done
+                sleep 1
+              done
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 300m
+              memory: 128Mi
+          volumeMounts:
+            - name: test-storage
+              mountPath: /data/test
+      volumes:
+        - name: test-storage
+          persistentVolumeClaim:
+            claimName: hpa-test-pvc
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-pvc-test
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpa-pvc-test
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
