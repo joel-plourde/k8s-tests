@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: NodePort
+  ports:
+      # mandatopry field
+    - port: 80
+      # If you don't provide a target port, it will use the same as port.
+      targetPort: 80
+      # If you don't provide a nodePort a free port in the
+      # valid range of 30,000 and 32,767 is automatically allocated
+      nodePort: 30008
+  selector:
+    app: nginx
+    type: front-end

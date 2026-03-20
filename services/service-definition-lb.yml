@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-lb
+spec:
+  type: LoadBalancer
+  ports:
+      # mandatopry field
+    - targetPort: 80
+      # If you don't provide a target port, it will use the same as port.
+      port: 80
+      nodePort
+  selector:
+    app: nginx
+    type: front-end
